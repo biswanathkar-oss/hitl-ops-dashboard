@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>HiTL Ops Command Centre — Demo | Biswanath Kar</title>
+<meta name="description" content="Interactive HiTL Data Labelling Ops Dashboard — 80 agents, 2 agencies, 15 projects. Portfolio demo by Biswanath Kar.">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0f1a;--surface:#111827;--card:#161d2e;--border:#1e2d45;
+  --accent:#00e5ff;--a2:#7c3aed;--a3:#f59e0b;
+  --green:#10b981;--red:#ef4444;--orange:#f97316;--amber:#fbbf24;
+  --text:#e2e8f0;--muted:#64748b;
+  --mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden;}
+
+/* ── Scroll blank fix: promote layers ── */
+.panel,.tbl-wrap,.proj-card{transform:translateZ(0);}
+.tbl-wrap{-webkit-overflow-scrolling:touch;}
+
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 24px;
+  background:#0d1525;
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;
+}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-icon{width:32px;height:32px;background:var(--accent);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;font-size:16px;}
+.logo h1{font-family:var(--mono);font-size:13px;letter-spacing:2px;color:var(--accent);}
+.logo small{font-size:9px;color:var(--muted);letter-spacing:1px;}
+.hdr-right{display:flex;align-items:center;gap:14px;}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);
+  display:inline-block;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+/* Sync indicator */
+.sync-badge{display:flex;align-items:center;gap:6px;font-size:10px;font-family:var(--mono);
+  padding:4px 10px;border-radius:20px;border:1px solid var(--border);}
+.sync-badge.synced{color:var(--green);border-color:rgba(16,185,129,.3);}
+.sync-badge.syncing{color:var(--amber);border-color:rgba(251,191,36,.3);}
+.sync-badge.error{color:var(--red);border-color:rgba(239,68,68,.3);}
+.sync-badge.offline{color:var(--muted);border-color:var(--border);}
+
+/* Auth panel */
+.auth-overlay{
+  position:fixed;inset:0;background:rgba(11,15,26,.95);
+  display:flex;align-items:center;justify-content:center;z-index:500;
+}
+.auth-box{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:32px;max-width:420px;width:90%;text-align:center;
+}
+.auth-box h2{font-family:var(--mono);font-size:14px;color:var(--accent);
+  letter-spacing:2px;margin-bottom:8px;}
+.auth-box p{font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.6;}
+.google-btn{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  background:#fff;color:#333;border:none;border-radius:6px;
+  padding:11px 20px;font-size:13px;font-weight:600;cursor:pointer;
+  width:100%;transition:background .2s;
+}
+.google-btn:hover{background:#f1f1f1;}
+.google-btn svg{width:18px;height:18px;}
+.auth-skip{margin-top:12px;font-size:11px;color:var(--muted);cursor:pointer;
+  text-decoration:underline;}
+.auth-skip:hover{color:var(--text);}
+
+/* Tabs */
+.tabs{display:flex;padding:0 24px;background:var(--surface);
+  border-bottom:1px solid var(--border);overflow-x:auto;}
+.tab{padding:10px 16px;font-size:11px;font-weight:600;letter-spacing:.4px;cursor:pointer;
+  border-bottom:2px solid transparent;color:var(--muted);transition:all .2s;white-space:nowrap;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab:hover:not(.active){color:var(--text);}
+
+/* Pages */
+.page{display:none;padding:20px 24px;}
+.page.active{display:block;}
+
+/* KPI */
+.kpi-row{display:grid;gap:10px;margin-bottom:16px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:9px;
+  padding:14px;position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--kpi-c,var(--accent));}
+.kpi-label{font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+.kpi-val{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--kpi-c,var(--accent));}
+.kpi-sub{font-size:10px;color:var(--muted);margin-top:3px;}
+
+/* Panel */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:9px;
+  padding:16px;margin-bottom:14px;}
+.sec{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--accent);
+  text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.sec::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* Grids */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.g6{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;}
+
+/* Table */
+.tbl-wrap{overflow-y:auto;max-height:380px;}
+.tbl-wrap::-webkit-scrollbar{width:4px;}
+.tbl-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+table{width:100%;border-collapse:collapse;font-size:11px;}
+thead{display:table;width:100%;table-layout:fixed;}
+tbody{display:block;overflow-y:auto;}
+tbody tr{display:table;width:100%;table-layout:fixed;}
+th{text-align:left;padding:7px 9px;font-family:var(--mono);font-size:9px;
+  letter-spacing:1px;text-transform:uppercase;color:var(--muted);
+  border-bottom:1px solid var(--border);background:var(--card);}
+td{padding:7px 9px;border-bottom:1px solid rgba(30,45,69,.4);overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(0,229,255,.02);}
+
+/* Badges */
+.badge{padding:2px 7px;border-radius:20px;font-size:9px;font-weight:700;letter-spacing:.4px;}
+.bp0{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3);}
+.bp1{background:rgba(249,115,22,.15);color:#f97316;border:1px solid rgba(249,115,22,.3);}
+.bp2{background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3);}
+.ba{background:rgba(16,185,129,.12);color:#10b981;border:1px solid rgba(16,185,129,.25);}
+.bh{background:rgba(249,115,22,.12);color:#f97316;border:1px solid rgba(249,115,22,.25);}
+.bp{background:rgba(0,229,255,.08);color:#00e5ff;border:1px solid rgba(0,229,255,.2);}
+.bk{background:rgba(100,116,139,.12);color:#94a3b8;border:1px solid rgba(100,116,139,.25);}
+
+/* Controls */
+select,input[type=text],input[type=number]{
+  background:var(--surface);border:1px solid var(--border);color:var(--text);
+  padding:7px 11px;border-radius:6px;font-family:var(--sans);font-size:12px;outline:none;}
+select:focus,input:focus{border-color:var(--accent);}
+input[type=range]{accent-color:var(--accent);cursor:pointer;width:100%;height:4px;}
+input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:pointer;}
+.btn{padding:8px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;
+  border:none;transition:all .2s;font-family:var(--sans);}
+.btn-p{background:var(--accent);color:#000;}
+.btn-p:hover{background:#00c4d9;}
+.btn-d{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3);}
+.btn-g{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.btn-g:hover{color:var(--text);border-color:var(--text);}
+.btn-y{background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3);}
+
+/* Reallocation */
+.realloc-box{background:var(--surface);border:1px solid var(--amber);
+  border-radius:9px;padding:18px;margin-bottom:14px;}
+.flow-row{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+.flow-arrow{font-size:24px;color:var(--amber);padding-top:28px;}
+.proj-pill{background:var(--card);border:1px solid var(--border);border-radius:8px;
+  padding:12px;flex:1;min-width:180px;}
+.proj-pill-label{font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:6px;}
+.impact-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0;}
+.impact-cell{background:var(--card);border:1px solid var(--border);
+  border-radius:6px;padding:10px;text-align:center;}
+.impact-label{font-size:9px;color:var(--muted);margin-bottom:4px;}
+.impact-val{font-family:var(--mono);font-size:15px;font-weight:700;}
+.impact-delta{font-size:9px;margin-top:2px;}
+.sl-wrap{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;}
+.sl-row{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);}
+
+/* Cost toggle */
+.cost-toggle{display:flex;border:1px solid var(--border);border-radius:7px;
+  overflow:hidden;margin-bottom:12px;width:fit-content;}
+.ctb{padding:6px 14px;font-size:11px;font-weight:600;cursor:pointer;
+  background:transparent;color:var(--muted);border:none;transition:all .2s;}
+.ctb.active{background:var(--accent);color:#000;}
+
+/* Rate card editable */
+.rate-table{width:100%;border-collapse:collapse;font-size:11px;}
+.rate-table th{background:var(--surface);padding:7px 9px;font-size:9px;
+  font-family:var(--mono);letter-spacing:1px;color:var(--muted);border:1px solid var(--border);}
+.rate-table td{padding:5px 9px;border:1px solid rgba(30,45,69,.5);}
+.editable-cell{background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.2) !important;}
+.editable-cell input{background:transparent;border:none;color:var(--amber);
+  font-family:var(--mono);font-size:11px;width:70px;text-align:right;outline:none;}
+
+/* Report fields */
+.field-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:12px;}
+.field-item{display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer;
+  padding:6px 9px;border-radius:6px;border:1px solid var(--border);transition:all .2s;}
+.field-item:hover,.field-item.checked{border-color:var(--accent);background:rgba(0,229,255,.05);}
+
+/* Progress */
+.pbar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.pfill{height:100%;border-radius:2px;}
+
+/* Write-back status row */
+.wb-log{background:var(--surface);border:1px solid var(--border);border-radius:6px;
+  padding:10px 14px;font-size:10px;font-family:var(--mono);color:var(--muted);
+  max-height:80px;overflow-y:auto;margin-top:8px;}
+.wb-ok{color:var(--green);}
+.wb-err{color:var(--red);}
+.wb-info{color:var(--accent);}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--surface);
+  border:1px solid var(--accent);border-radius:8px;padding:11px 16px;
+  font-size:12px;z-index:9999;display:none;}
+</style>
+</head>
+<body>
+
+
+<!-- Demo Banner -->
+<div style="background:linear-gradient(90deg,rgba(124,58,237,.18),rgba(0,229,255,.08),rgba(124,58,237,.18));border-bottom:1px solid rgba(124,58,237,.35);padding:7px 24px;display:flex;align-items:center;justify-content:space-between;font-size:11px;">
+  <div style="display:flex;align-items:center;gap:8px;font-family:'Space Mono',monospace;color:#a78bfa;letter-spacing:1px;">
+    <span style="padding:2px 8px;background:rgba(124,58,237,.2);border:1px solid rgba(124,58,237,.4);border-radius:20px;font-size:9px;font-weight:700;">DEMO</span>
+    HiTL Ops Command Centre &middot; Interactive Portfolio Demo &middot; Data is illustrative
+  </div>
+  <div style="display:flex;gap:14px;">
+    <a href="https://github.com/biswanathkar-oss/hitl-ops-dashboard" target="_blank" style="color:#64748b;font-size:11px;text-decoration:none;">⭐ GitHub</a>
+    <a href="https://linkedin.com/in/biswanathkar" target="_blank" style="color:#64748b;font-size:11px;text-decoration:none;">💼 LinkedIn</a>
+  </div>
+</div>
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <div>
+      <h1>HiTL OPS COMMAND CENTRE</h1>
+      <small>80 AGENTS · 2 AGENCIES · 15 PROJECTS</small>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div class="sync-badge synced" style="color:#10b981;border-color:rgba(16,185,129,.3)">● DEMO MODE</div>
+    <span id="clock" style="font-family:var(--mono);font-size:11px;color:var(--muted)"></span>
+    <span style="font-size:10px;color:#a78bfa;font-family:var(--mono)">OPS MGR · BISWANATH</span>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active"  onclick="T('overview',this)">📊 Overview</div>
+  <div class="tab" onclick="T('projects',this)">📁 Projects</div>
+  <div class="tab" onclick="T('realloc',this)">🔀 Reallocation</div>
+  <div class="tab" onclick="T('cost',this)">💰 Cost Config</div>
+  <div class="tab" onclick="T('agency',this)">🏢 Agency</div>
+  <div class="tab" onclick="T('idle',this)">⚠ Idle Risk</div>
+  <div class="tab" onclick="T('qa',this)">🔍 QA</div>
+  <div class="tab" onclick="T('report',this)">📄 Reports</div>
+</div>
+
+<!-- OVERVIEW -->
+<div class="page active" id="tab-overview">
+  <div class="kpi-row g6">
+    <div class="kpi" style="--kpi-c:#00e5ff"><div class="kpi-label">Total Agents</div><div class="kpi-val">80</div><div class="kpi-sub">Alpha 50 · Beta 30</div></div>
+    <div class="kpi" style="--kpi-c:#10b981"><div class="kpi-label">Active Labelers</div><div class="kpi-val">76</div><div class="kpi-sub">4 QC reserved</div></div>
+    <div class="kpi" style="--kpi-c:#f97316"><div class="kpi-label">Active Projects</div><div class="kpi-val">9</div><div class="kpi-sub">3 Planning · 3 On-Hold</div></div>
+    <div class="kpi" style="--kpi-c:#ef4444"><div class="kpi-label">P0 Projects</div><div class="kpi-val">3</div><div class="kpi-sub">Lidar · Pedestrian · Medical</div></div>
+    <div class="kpi" style="--kpi-c:#fbbf24"><div class="kpi-label">⚠ Idle ≤7d</div><div class="kpi-val" id="k-idle">—</div><div class="kpi-sub">Projects at risk</div></div>
+    <div class="kpi" style="--kpi-c:#7c3aed"><div class="kpi-label">Overall Progress</div><div class="kpi-val" id="k-prog">—</div><div class="kpi-sub">Across all projects</div></div>
+  </div>
+  <div class="g2">
+    <div>
+      <div class="panel">
+        <div class="sec">PROJECT CARDS <span style="font-size:9px;color:var(--muted);margin-left:8px;" id="last-read-label"></span></div>
+        <div id="proj-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:9px;"></div>
+      </div>
+    </div>
+    <div>
+      <div class="panel">
+        <div class="sec">WRITE-BACK LOG</div>
+        <div class="wb-log" id="wb-log"><span class="wb-info">Waiting for Google sign-in...</span></div>
+      </div>
+      <div class="panel">
+        <div class="sec">AGENT UTILISATION</div>
+        <canvas id="utilChart" height="180"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECTS -->
+<div class="page" id="tab-projects">
+  <div class="panel">
+    <div class="sec">ALL PROJECTS — REQ↔PRJ MAPPED
+      <button class="btn btn-g" style="padding:4px 10px;font-size:10px;margin-left:8px" onclick="loadFromSheets()">↻ Refresh from Sheets</button>
+    </div>
+    <div class="tbl-wrap">
+      <table><thead><tr>
+        <th style="width:70px">REQ ID</th><th style="width:70px">PRJ ID</th>
+        <th style="width:180px">Project</th><th style="width:100px">Team</th>
+        <th style="width:50px">P</th><th style="width:80px">Status</th>
+        <th style="width:70px">Total</th><th style="width:60px">Done</th>
+        <th style="width:65px">Rem</th><th style="width:55px">%</th>
+        <th style="width:55px">Agents</th><th style="width:55px">TPD</th>
+        <th style="width:55px">Days</th><th style="width:80px">SLA</th>
+        <th style="width:90px">Risk</th>
+      </tr></thead><tbody id="proj-tbody" style="max-height:440px;"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- REALLOCATION -->
+<div class="page" id="tab-realloc">
+  <div class="realloc-box">
+    <div style="font-family:var(--mono);font-size:11px;letter-spacing:1px;color:var(--amber);margin-bottom:14px;">
+      ⚡ PRIORITY REALLOCATION — Changes write back to AGENT_ALLOCATION_FLAT in Google Sheets
+    </div>
+    <div class="flow-row">
+      <div class="proj-pill">
+        <div class="proj-pill-label">SOURCE PROJECT (Donor)</div>
+        <select id="src-proj" onchange="updateRealloc()" style="width:100%;margin-top:6px;">
+          <option value="">— Select source —</option>
+        </select>
+        <div style="font-size:10px;color:var(--muted);margin-top:6px;" id="src-meta">—</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="proj-pill">
+        <div class="proj-pill-label">DESTINATION PROJECT (Receiver)</div>
+        <select id="dst-proj" onchange="updateRealloc()" style="width:100%;margin-top:6px;">
+          <option value="">— Select destination —</option>
+        </select>
+        <div style="font-size:10px;color:var(--muted);margin-top:6px;" id="dst-meta">—</div>
+      </div>
+    </div>
+
+    <div class="sl-wrap">
+      <div class="sl-row"><span>% of Source Agents to Transfer</span>
+        <span style="color:var(--amber);font-family:var(--mono);font-weight:700" id="xpct-val">30%</span></div>
+      <input type="range" min="10" max="80" step="5" value="30" id="xpct" oninput="updateRealloc()">
+      <div class="sl-row"><span>10%</span><span>80%</span></div>
+    </div>
+    <div class="sl-wrap">
+      <div class="sl-row"><span>Ramp Period for Transferred Agents</span>
+        <span style="color:var(--accent);font-family:var(--mono);font-weight:700" id="ramp-val">3 days</span></div>
+      <input type="range" min="0" max="10" step="1" value="3" id="ramp" oninput="updateRealloc()">
+      <div class="sl-row"><span>0 (immediate)</span><span>10 days</span></div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;color:var(--muted);margin-right:8px;">Transfer Strategy:</label>
+      <select id="strategy" onchange="updateRealloc()">
+        <option value="lowest-util">Lowest-utilisation agents first</option>
+        <option value="newest">Newest agents first</option>
+        <option value="secondary">Secondary-split agents first</option>
+      </select>
+    </div>
+
+    <div class="impact-grid">
+      <div class="impact-cell"><div class="impact-label">Agents Moved</div><div class="impact-val" id="imp-moved" style="color:var(--amber)">—</div></div>
+      <div class="impact-cell"><div class="impact-label">Source TPD After</div><div class="impact-val" id="imp-stpd" style="color:var(--orange)">—</div><div class="impact-delta" id="imp-stpd-d"></div></div>
+      <div class="impact-cell"><div class="impact-label">Source Days Left</div><div class="impact-val" id="imp-sdays" style="color:var(--red)">—</div><div class="impact-delta" id="imp-sdays-d"></div></div>
+      <div class="impact-cell"><div class="impact-label">Dest TPD After</div><div class="impact-val" id="imp-dtpd" style="color:var(--green)">—</div><div class="impact-delta" id="imp-dtpd-d"></div></div>
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:10px;" id="xpreview"></div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <button class="btn btn-p" onclick="confirmRealloc()">✓ Confirm & Write to Sheets</button>
+      <button class="btn btn-g" onclick="resetRealloc()">↺ Reset</button>
+      <span id="realloc-warn" style="font-size:11px;color:var(--amber);"></span>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="sec">CURRENT ALLOCATION (from AGENT_ALLOCATION_FLAT)</div>
+    <div class="tbl-wrap">
+      <table><thead><tr>
+        <th style="width:70px">Agent</th><th style="width:110px">Agency</th>
+        <th style="width:50px">Role</th><th style="width:180px">Project</th>
+        <th style="width:50px">P</th><th style="width:60px">Alloc%</th>
+        <th style="width:120px">Type</th><th style="width:70px">TPD</th>
+        <th style="width:80px">Ramp</th>
+      </tr></thead><tbody id="ra-tbody" style="max-height:300px;"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- COST CONFIG -->
+<div class="page" id="tab-cost">
+  <div class="g2" style="margin-bottom:14px;">
+    <div class="panel">
+      <div class="sec">AGENCY ALPHA — BILLING MODEL <span style="font-size:9px;color:var(--green)" id="alpha-saved"></span></div>
+      <div class="cost-toggle" id="tgl-alpha">
+        <button class="ctb" onclick="setModel('alpha','HC')">HC-Based</button>
+        <button class="ctb active" onclick="setModel('alpha','Transaction')">Transaction</button>
+        <button class="ctb" onclick="setModel('alpha','Hybrid')">Hybrid</button>
+      </div>
+      <div id="alpha-hc" style="display:none;margin-bottom:10px;">
+        <label style="font-size:11px;color:var(--muted);">Monthly Rate / Agent (₹)</label>
+        <input type="number" id="alpha-hc-rate" value="45000" style="width:100%;margin-top:4px;" oninput="recalcCost()">
+      </div>
+      <div id="alpha-hyb" style="display:none;margin-bottom:10px;">
+        <div class="sl-wrap">
+          <div class="sl-row"><span>Fixed Base %</span>
+            <span id="alpha-hyb-v" style="color:var(--accent);font-family:var(--mono)">60%</span></div>
+          <input type="range" min="0" max="100" step="5" value="60" id="alpha-hyb-pct"
+            oninput="document.getElementById('alpha-hyb-v').textContent=this.value+'%';recalcCost()">
+        </div>
+        <label style="font-size:11px;color:var(--muted);">HC Rate / Agent (₹)</label>
+        <input type="number" id="alpha-hyb-rate" value="45000" style="width:100%;margin-top:4px;" oninput="recalcCost()">
+      </div>
+      <div id="alpha-smry" style="font-size:11px;"></div>
+      <button class="btn btn-p" style="margin-top:10px;width:100%" onclick="saveCostConfig('alpha')">💾 Save Alpha Config to Sheets</button>
+    </div>
+    <div class="panel">
+      <div class="sec">AGENCY BETA — BILLING MODEL <span style="font-size:9px;color:var(--green)" id="beta-saved"></span></div>
+      <div class="cost-toggle" id="tgl-beta">
+        <button class="ctb" onclick="setModel('beta','HC')">HC-Based</button>
+        <button class="ctb active" onclick="setModel('beta','Transaction')">Transaction</button>
+        <button class="ctb" onclick="setModel('beta','Hybrid')">Hybrid</button>
+      </div>
+      <div id="beta-hc" style="display:none;margin-bottom:10px;">
+        <label style="font-size:11px;color:var(--muted);">Monthly Rate / Agent (₹)</label>
+        <input type="number" id="beta-hc-rate" value="38000" style="width:100%;margin-top:4px;" oninput="recalcCost()">
+      </div>
+      <div id="beta-hyb" style="display:none;margin-bottom:10px;">
+        <div class="sl-wrap">
+          <div class="sl-row"><span>Fixed Base %</span>
+            <span id="beta-hyb-v" style="color:var(--a3);font-family:var(--mono)">40%</span></div>
+          <input type="range" min="0" max="100" step="5" value="40" id="beta-hyb-pct"
+            oninput="document.getElementById('beta-hyb-v').textContent=this.value+'%';recalcCost()">
+        </div>
+        <label style="font-size:11px;color:var(--muted);">HC Rate / Agent (₹)</label>
+        <input type="number" id="beta-hyb-rate" value="38000" style="width:100%;margin-top:4px;" oninput="recalcCost()">
+      </div>
+      <div id="beta-smry" style="font-size:11px;"></div>
+      <button class="btn btn-p" style="margin-top:10px;width:100%" onclick="saveCostConfig('beta')">💾 Save Beta Config to Sheets</button>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="sec">TRANSACTION RATE CARD — Editable (writes to RATE_CARD sheet)
+      <button class="btn btn-y" style="padding:4px 10px;font-size:10px" onclick="saveRateCard()">💾 Save Rate Card</button>
+    </div>
+    <div style="font-size:10px;color:var(--amber);margin-bottom:8px;">Yellow cells are editable. Click Save Rate Card to persist to Google Sheets.</div>
+    <div class="tbl-wrap" style="max-height:300px;">
+      <table class="rate-table"><thead><tr>
+        <th>Category</th><th>Sub-Type</th><th>Unit</th><th>Complexity</th>
+        <th style="color:#00e5ff">α Rate (₹)</th>
+        <th style="color:#f59e0b">β Rate (₹)</th>
+        <th>Rush +%</th>
+        <th style="color:#10b981">α Rush</th>
+        <th style="color:#10b981">β Rush</th>
+      </tr></thead><tbody id="rate-tbody" style="max-height:240px;"></tbody></table>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="sec">MONTHLY COST SUMMARY</div>
+    <div class="g4" id="cost-smry"></div>
+  </div>
+</div>
+
+<!-- AGENCY -->
+<div class="page" id="tab-agency">
+  <div class="g2" style="margin-bottom:14px;" id="agency-cards"></div>
+  <div class="panel">
+    <div class="sec">PER-PROJECT AGENCY CONTRIBUTION</div>
+    <div class="tbl-wrap">
+      <table><thead><tr>
+        <th style="width:70px">REQ ID</th><th style="width:70px">PRJ ID</th>
+        <th style="width:160px">Project</th><th>P</th><th>Status</th>
+        <th>α Agents</th><th>β Agents</th><th>α%</th><th>β%</th>
+        <th>α TPD</th><th>β TPD</th><th>α QA%</th><th>β QA%</th>
+        <th>Cost/Day</th><th>α Risk</th>
+      </tr></thead><tbody id="agency-tbody" style="max-height:340px;"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- IDLE RISK -->
+<div class="page" id="tab-idle">
+  <div class="panel" style="overflow-x:auto;">
+    <div class="sec">7-DAY IDLE HEATMAP</div>
+    <div id="heatmap" style="display:grid;gap:2px;min-width:600px;"></div>
+  </div>
+  <div class="panel">
+    <div class="sec">IDLE RISK DETAIL</div>
+    <div class="tbl-wrap">
+      <table><thead><tr>
+        <th style="width:70px">REQ ID</th><th style="width:70px">PRJ ID</th>
+        <th style="width:160px">Project</th><th>P</th><th>Status</th>
+        <th>Remaining</th><th>TPD</th><th>Days</th>
+        <th>Risk</th><th>Alert</th><th>Action</th>
+      </tr></thead><tbody id="idle-tbody" style="max-height:340px;"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- QA -->
+<div class="page" id="tab-qa">
+  <div class="kpi-row g4" style="margin-bottom:14px;">
+    <div class="kpi" style="--kpi-c:#10b981"><div class="kpi-label">Avg Pass Rate</div><div class="kpi-val">92.1%</div></div>
+    <div class="kpi" style="--kpi-c:#ef4444"><div class="kpi-label">Active Reworks</div><div class="kpi-val">3</div></div>
+    <div class="kpi" style="--kpi-c:#fbbf24"><div class="kpi-label">Avg Error Rate</div><div class="kpi-val">4.8%</div></div>
+    <div class="kpi" style="--kpi-c:#7c3aed"><div class="kpi-label">Rework Threshold</div><div class="kpi-val">>10%</div></div>
+  </div>
+  <div class="panel"><div class="sec">QA BATCH LOG</div>
+    <div class="tbl-wrap">
+      <table><thead><tr>
+        <th>QA ID</th><th>Date</th><th>Project</th><th>Agent</th><th>QC</th>
+        <th>Labelled</th><th>Sample</th><th>Errors</th><th>Error%</th>
+        <th>Outcome</th><th>Rework?</th><th>Root Cause</th>
+      </tr></thead><tbody id="qa-tbody" style="max-height:380px;"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- REPORTS -->
+<div class="page" id="tab-report">
+  <div class="g2">
+    <div class="panel">
+      <div class="sec">SELECT FIELDS</div>
+      <div class="field-grid" id="field-grid"></div>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <button class="btn btn-g" onclick="selAll()">☑ All</button>
+        <button class="btn btn-g" onclick="clrAll()">☐ Clear</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="sec">FILTERS & EXPORT</div>
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">Status</label>
+          <select id="rpt-status" style="width:100%"><option value="">All</option>
+            <option>Active</option><option>On-Hold</option><option>Planning</option><option>Backlog</option>
+          </select></div>
+        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">Priority</label>
+          <select id="rpt-prio" style="width:100%"><option value="">All</option>
+            <option value="0">P0</option><option value="1">P1</option>
+            <option value="2">P2</option><option value="3">P3</option>
+          </select></div>
+        <div><label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px;">Risk</label>
+          <select id="rpt-risk" style="width:100%"><option value="">All</option>
+            <option>🔴 CRITICAL</option><option>🟠 HIGH</option>
+            <option>🟡 WATCH</option><option>🟢 OK</option>
+          </select></div>
+        <button class="btn btn-p" onclick="genReport()">📄 Preview</button>
+        <button class="btn btn-y" onclick="dlCSV()">⬇ Download CSV</button>
+      </div>
+    </div>
+  </div>
+  <div class="panel" id="rpt-panel" style="display:none;">
+    <div class="sec">REPORT PREVIEW</div>
+    <div class="tbl-wrap" style="max-height:360px;">
+      <table><thead id="rpt-thead"></thead><tbody id="rpt-tbody" style="max-height:300px;"></tbody></table>
+    </div>
+    <div style="margin-top:8px;font-size:10px;color:var(--muted);" id="rpt-meta"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// ═══════════════ CONFIG ════════════════════════════════════════════════
+const CLIENT_ID   = '47205490537-vce5lsoabaj873bcemkqbt6g02j02212.apps.googleusercontent.com';
+const SHEET_ID    = '1D5lDd2RZ4NRuqavhFYgnH8pf7ZwgbhZe_rrVcMauSpA';
+const SCOPES      = 'https://www.googleapis.com/auth/spreadsheets';
+const DISCOVERY   = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
+const NET         = 480 * 0.85 * 0.98;  // 399.84 net mins/agent/day
+
+// Tab ranges in the spreadsheet
+const RANGES = {
+  DASHBOARD_DATA:       'DASHBOARD_DATA!A3:AB20',
+  AGENT_ALLOC_FLAT:     'AGENT_ALLOCATION_FLAT!A3:T200',
+  RATE_CARD:            'RATE_CARD!A11:P26',
+  REQ_MAPPING:          'REQ_PRJ_MAPPING!A4:L20',
+};
+
+// ═══════════════ STATE ══════════════════════════════════════════════════
+let isSignedIn   = false;
+let isOffline    = false;
+let tokenClient  = null;
+let gapiInited   = false;
+let gisInited    = false;
+let agentModels  = { alpha: 'Transaction', beta: 'Transaction' };
+
+// ─── Local mutable project state (fallback + live) ────────────────────
+const MAPPING = [
+  {req:'REQ-001',prj:'PRJ-001',team:'Search Science'},
+  {req:'REQ-002',prj:'PRJ-002',team:'NLP Platform'},
+  {req:'REQ-003',prj:'PRJ-003',team:'CV Research'},
+  {req:'REQ-004',prj:'PRJ-004',team:'Grocery'},
+  {req:'REQ-005',prj:'PRJ-005',team:'Fashion'},
+  {req:'REQ-006',prj:'PRJ-006',team:'Search Science'},
+  {req:'REQ-007',prj:'PRJ-007',team:'Voice AI'},
+  {req:'REQ-008',prj:'PRJ-008',team:'Medical AI'},
+  {req:'REQ-009',prj:'PRJ-009',team:'CV Research'},
+  {req:'REQ-010',prj:'PRJ-010',team:'Search Science'},
+  {req:'REQ-011',prj:'PRJ-011',team:'Grocery'},
+  {req:'REQ-012',prj:'PRJ-012',team:'Fashion'},
+  {req:'REQ-013',prj:'PRJ-013',team:'Grocery'},
+  {req:'REQ-014',prj:'PRJ-014',team:'Search Science'},
+  {req:'REQ-015',prj:'PRJ-015',team:'NLP Platform'},
+];
+
+let PROJECTS = [
+  {id:'PRJ-001',name:'Lidar Point Cloud Seg',   prio:0,total:5000, done:2250, apt:65, agents:5, aA:4,aB:1,sla:'2026-05-15',status:'Active',  qaErr:0.006},
+  {id:'PRJ-002',name:'Sentiment Analysis',       prio:1,total:20000,done:16000,apt:1.5,agents:4, aA:3,aB:1,sla:'2026-04-28',status:'Active',  qaErr:0.040},
+  {id:'PRJ-003',name:'Pedestrian Detection',     prio:0,total:8000, done:1200, apt:18, agents:13,aA:8,aB:5,sla:'2026-05-20',status:'Active',  qaErr:0.015},
+  {id:'PRJ-004',name:'Grocery Catalog',          prio:1,total:12000,done:10800,apt:4,  agents:3, aA:2,aB:1,sla:'2026-04-28',status:'Active',  qaErr:0.060},
+  {id:'PRJ-005',name:'Fashion Attribute',        prio:2,total:18000,done:9000, apt:4,  agents:4, aA:3,aB:1,sla:'2026-05-10',status:'Active',  qaErr:0.050},
+  {id:'PRJ-006',name:'Road Sign OCR',            prio:1,total:5000, done:0,    apt:3.5,agents:0, aA:0,aB:0,sla:'2026-04-30',status:'On-Hold', qaErr:0},
+  {id:'PRJ-007',name:'Audio Transcription',      prio:2,total:3000, done:0,    apt:15, agents:0, aA:0,aB:0,sla:'2026-05-10',status:'Backlog', qaErr:0},
+  {id:'PRJ-008',name:'Medical Imaging',          prio:0,total:1500, done:0,    apt:8,  agents:3, aA:2,aB:1,sla:'2026-05-10',status:'Planning',qaErr:0},
+  {id:'PRJ-009',name:'Edge Case Validation',     prio:2,total:4000, done:1600, apt:45, agents:4, aA:3,aB:1,sla:'2026-05-15',status:'On-Hold', qaErr:0.016},
+  {id:'PRJ-010',name:'Intent Classification',    prio:1,total:15000,done:0,    apt:6,  agents:14,aA:9,aB:5,sla:'2026-05-12',status:'Planning',qaErr:0},
+  {id:'PRJ-011',name:'Ingredients OCR',          prio:1,total:9000, done:4500, apt:3.5,agents:4, aA:3,aB:1,sla:'2026-04-30',status:'Active',  qaErr:0.030},
+  {id:'PRJ-012',name:'Spam Filter Training',     prio:1,total:25000,done:5000, apt:1.5,agents:18,aA:11,aB:7,sla:'2026-05-05',status:'Active', qaErr:0.030},
+  {id:'PRJ-013',name:'Product Image QA',         prio:1,total:6000, done:1800, apt:2.5,agents:4, aA:3,aB:1,sla:'2026-05-02',status:'Active',  qaErr:0.020},
+  {id:'PRJ-014',name:'NER Tagging',              prio:2,total:11000,done:0,    apt:6,  agents:5, aA:3,aB:2,sla:'2026-05-20',status:'Planning',qaErr:0},
+  {id:'PRJ-015',name:'Video Tracking',           prio:2,total:2000, done:400,  apt:35, agents:1, aA:1,aB:0,sla:'2026-05-15',status:'Active',  qaErr:0.110},
+];
+
+let RATE_CARD = [
+  {cat:'Computer Vision',sub:'2D Bounding Box',   unit:'Image',   cplx:'Low',      aR:3.50, bR:2.80,rush:25},
+  {cat:'Computer Vision',sub:'3D Lidar Seg',      unit:'Frame',   cplx:'Very High',aR:22.00,bR:17.50,rush:60},
+  {cat:'NLP',            sub:'Sentiment Scoring', unit:'Post',    cplx:'Low',      aR:0.80, bR:0.65,rush:10},
+  {cat:'NLP',            sub:'NER / Intent',      unit:'Para',    cplx:'Medium',   aR:3.20, bR:2.60,rush:25},
+  {cat:'Speech',         sub:'Transcription',     unit:'Audio Min',cplx:'Medium',  aR:5.50, bR:4.20,rush:30},
+  {cat:'Catalog',        sub:'Attribute Extract', unit:'Item',    cplx:'Low',      aR:1.80, bR:1.40,rush:15},
+  {cat:'Computer Vision',sub:'Polygon Mapping',   unit:'Object',  cplx:'Medium',   aR:6.00, bR:4.80,rush:35},
+  {cat:'Computer Vision',sub:'Video Tracking',    unit:'/10s',    cplx:'High',     aR:12.00,bR:9.50,rush:40},
+  {cat:'OCR',            sub:'Text Extraction',   unit:'Image',   cplx:'Low',      aR:1.20, bR:0.95,rush:15},
+  {cat:'Computer Vision',sub:'Bounding Box 3D',   unit:'Frame',   cplx:'High',     aR:8.50, bR:6.80,rush:40},
+];
+
+const QA_LOG = [
+  {id:'QA-001',date:'2026-04-11',proj:'Lidar Seg',   agent:'AG-001',qc:'AG-021',done:500, err:3},
+  {id:'QA-002',date:'2026-04-13',proj:'Sentiment',   agent:'AG-003',qc:'AG-022',done:2000,err:80,cause:'Hindi sarcasm'},
+  {id:'QA-003',date:'2026-04-14',proj:'Pedestrian',  agent:'AG-005',qc:'AG-023',done:800, err:12,cause:'Partial occlusion'},
+  {id:'QA-004',date:'2026-04-15',proj:'Grocery',     agent:'AG-007',qc:'AG-022',done:1200,err:72,cause:'Wrong taxonomy'},
+  {id:'QA-005',date:'2026-04-16',proj:'Lidar Seg',   agent:'AG-002',qc:'AG-021',done:500, err:20,cause:'New agent errors'},
+  {id:'QA-006',date:'2026-04-17',proj:'Fashion',     agent:'AG-010',qc:'AG-024',done:900, err:45,cause:'Multi-label issue'},
+  {id:'QA-007',date:'2026-04-18',proj:'Ingredients', agent:'AG-012',qc:'AG-025',done:600, err:18,cause:'Handwritten OCR'},
+  {id:'QA-008',date:'2026-04-19',proj:'Spam Filter', agent:'AG-014',qc:'AG-026',done:2500,err:75,cause:'Borderline spam'},
+  {id:'QA-009',date:'2026-04-20',proj:'Product QA',  agent:'AG-016',qc:'AG-027',done:500, err:10,cause:'—'},
+  {id:'QA-010',date:'2026-04-21',proj:'Video Track', agent:'AG-018',qc:'AG-028',done:200, err:22,cause:'Frame drift'},
+  {id:'QA-011',date:'2026-04-22',proj:'Sentiment',   agent:'AG-020',qc:'AG-022',done:2000,err:40,cause:'—'},
+  {id:'QA-012',date:'2026-04-23',proj:'Pedestrian',  agent:'AG-004',qc:'AG-023',done:800, err:64,cause:'Night lighting'},
+  {id:'QA-013',date:'2026-04-24',proj:'Lidar Seg',   agent:'AG-006',qc:'AG-021',done:500, err:5, cause:'—'},
+  {id:'QA-014',date:'2026-04-25',proj:'Grocery',     agent:'AG-008',qc:'AG-022',done:1200,err:36,cause:'—'},
+  {id:'QA-015',date:'2026-04-26',proj:'Fashion',     agent:'AG-011',qc:'AG-024',done:900, err:135,cause:'Taxonomy drift'},
+];
+
+const ACTIONS = {
+  'PRJ-001':'Surge 3 agents from Sentiment when near-complete',
+  'PRJ-002':'Near idle — pre-plan redeployment to Intent Classification',
+  'PRJ-003':'Maintain — P0 safety critical, no reductions',
+  'PRJ-004':'Near complete — redeploy 2 agents to Road Sign OCR',
+  'PRJ-005':'On track — monitor nightly',
+  'PRJ-006':'Unblock SOP — assign 5 agents immediately after unhold',
+  'PRJ-007':'Defer to May — revisit after P1 completions',
+  'PRJ-008':'Recruit 2 DICOM-specialist labelers urgently',
+  'PRJ-009':'Keep on-hold — low ROI vs capacity cost',
+  'PRJ-010':'Finalise TnM — begin agent onboarding this week',
+  'PRJ-011':'Near idle — pre-plan to NER Tagging',
+  'PRJ-012':'Largest volume — maintain team',
+  'PRJ-013':'On track — SLA achievable',
+  'PRJ-014':'Begin ramp — 3-day onboarding, assign Beta agents',
+  'PRJ-015':'1 agent = 141 days — add 2 more or formally backlog',
+};
+
+
+// ═══ DEMO MODE — no Google Sheets connection ═══
+function signIn(){ }
+function skipAuth(){ }
+function setSyncBadge(){ }
+function wbLog(msg,cls){
+  const el=document.getElementById('wb-log');
+  if(!el) return;
+  const line=document.createElement('div');
+  line.className=cls||'';
+  line.textContent=new Date().toLocaleTimeString('en-IN')+' · '+msg;
+  el.appendChild(line);
+  el.scrollTop=el.scrollHeight;
+}
+async function loadFromSheets(){ renderAll(); }
+async function writeAllocation(srcId,dstId,moved){ wbLog('Demo: allocation updated in-memory only','wb-info'); }
+async function saveRateCard(){ toast('Demo mode — rate card saved in memory only (no Sheets)','#a78bfa'); }
+async function saveCostConfig(agency){ toast('Demo mode — config saved in memory only (no Sheets)','#a78bfa'); }
+
+// ═══════════════ GOOGLE API STUBS ══════════════════════════════════════
+
+
+function gapiLoaded(){
+  gapi.load('client', async ()=>{
+    await gapi.client.init({discoveryDocs:[DISCOVERY]});
+    gapiInited = true;
+    maybeEnableSignIn();
+  });
+}
+
+function gisLoaded(){
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: async (resp)=>{
+      if(resp.error){ setSyncBadge('error','AUTH ERROR'); return; }
+      isSignedIn = true;
+      document.getElementById('auth-overlay').style.display = 'none';
+      document.getElementById('user-label').textContent = 'OPS MGR · BISWANATH';
+      setSyncBadge('syncing','LOADING...');
+      await loadFromSheets();
+    }
+  });
+  gisInited = true;
+  maybeEnableSignIn();
+}
+
+function maybeEnableSignIn(){ /* both libs ready, overlay already shown */ }
+
+function signIn(){
+  if(!gapiInited || !gisInited){
+    toast('Google API still loading, try again in 2 seconds','#fbbf24');
+    setTimeout(()=>{ if(gapiInited&&gisInited) tokenClient.requestAccessToken({prompt:'consent'}); },2000);
+    return;
+  }
+  tokenClient.requestAccessToken({prompt:'consent'});
+}
+
+function skipAuth(){
+  isOffline = true;
+  document.getElementById('auth-overlay').style.display = 'none';
+  setSyncBadge('offline','OFFLINE MODE');
+  wbLog('Running in offline mode — changes will NOT persist to Sheets','wb-info');
+  renderAll();
+}
+
+// ─── Read from Sheets ─────────────────────────────────────────────────
+async function loadFromSheets(){
+  if(isOffline){ renderAll(); return; }
+  setSyncBadge('syncing','SYNCING...');
+  try {
+    // Read DASHBOARD_DATA
+    const res = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: RANGES.DASHBOARD_DATA,
+    });
+    const rows = res.result.values || [];
+    if(rows.length > 1){
+      // Skip header row (row index 0 = header)
+      PROJECTS = rows.slice(1).map(r => ({
+        id:     r[0]  || '',
+        name:   r[1]  || '',
+        prio:   parseInt(r[2]?.replace('P','')) || 0,
+        status: r[3]  || 'Active',
+        total:  parseInt(r[4])  || 0,
+        done:   parseInt(r[5])  || 0,
+        apt:    parseFloat(r[8]) || 1,
+        agents: parseInt(r[9])  || 0,
+        aA:     parseInt(r[11]) || 0,
+        aB:     parseInt(r[12]) || 0,
+        sla:    r[17] || '',
+        qaErr:  parseFloat(r[23]) || 0,
+      })).filter(p => p.id);
+      wbLog(`✓ Loaded ${PROJECTS.length} projects from DASHBOARD_DATA`,'wb-ok');
+      document.getElementById('last-read-label').textContent =
+        '(last read: ' + new Date().toLocaleTimeString('en-IN') + ')';
+    }
+
+    // Read RATE_CARD
+    const rcRes = await gapi.client.sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID,
+      range: RANGES.RATE_CARD,
+    });
+    const rcRows = rcRes.result.values || [];
+    if(rcRows.length){
+      RATE_CARD = rcRows.slice(1).filter(r=>r[0]).map(r=>({
+        cat:  r[1] || '',
+        sub:  r[2] || '',
+        unit: r[3] || '',
+        cplx: r[4] || '',
+        aR:   parseFloat(r[5]) || 0,
+        bR:   parseFloat(r[6]) || 0,
+        rush: parseFloat(r[12]) || 25,
+      }));
+      wbLog(`✓ Loaded ${RATE_CARD.length} rate card rows`,'wb-ok');
+    }
+
+    setSyncBadge('synced','SYNCED');
+    renderAll();
+  } catch(e){
+    console.error(e);
+    setSyncBadge('error','READ ERROR');
+    wbLog('⚠ Could not read from Sheets: '+e.message,'wb-err');
+    wbLog('Falling back to local data','wb-info');
+    renderAll();
+  }
+}
+
+// ─── Write allocation to AGENT_ALLOCATION_FLAT ────────────────────────
+async function writeAllocation(srcId, dstId, moved, pct, rampDays){
+  if(isOffline){
+    wbLog('Offline — allocation change saved in memory only','wb-info');
+    return;
+  }
+  setSyncBadge('syncing','WRITING...');
+  try {
+    const now = new Date().toISOString().slice(0,19).replace('T',' ');
+    // Append a reallocation event log row to AGENT_ALLOCATION_FLAT
+    const logRow = [[
+      'REALLOC', now, srcId, dstId,
+      `-${moved} agents (${pct}%)`, `+${moved} agents`,
+      `Ramp: ${rampDays}d`, 'Confirmed by Ops Mgr', '', '',
+      '', '', '', '', '', '', '', '', '', 'REALLOCATION EVENT'
+    ]];
+    // Find the first empty row by appending
+    await gapi.client.sheets.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID,
+      range: 'AGENT_ALLOCATION_FLAT!A1',
+      valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
+      resource: { values: logRow }
+    });
+
+    // Update DASHBOARD_DATA rows for src and dst
+    // Find row numbers (1-indexed, +3 for header offset)
+    const srcIdx = PROJECTS.findIndex(p=>p.id===srcId);
+    const dstIdx = PROJECTS.findIndex(p=>p.id===dstId);
+    if(srcIdx>=0){
+      const p = PROJECTS[srcIdx];
+      const rowNum = srcIdx + 5; // row 3 = headers, row 4 = first data
+      await gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range: `DASHBOARD_DATA!J${rowNum}:M${rowNum}`,
+        valueInputOption: 'USER_ENTERED',
+        resource: { values: [[p.agents, 1, p.aA, p.aB]] }
+      });
+    }
+    if(dstIdx>=0){
+      const p = PROJECTS[dstIdx];
+      const rowNum = dstIdx + 5;
+      await gapi.client.sheets.spreadsheets.values.update({
+        spreadsheetId: SHEET_ID,
+        range: `DASHBOARD_DATA!J${rowNum}:M${rowNum}`,
+        valueInputOption: 'USER_ENTERED',
+        resource: { values: [[p.agents, 1, p.aA, p.aB]] }
+      });
+    }
+
+    setSyncBadge('synced','SYNCED');
+    wbLog(`✓ Allocation written: ${moved} agents moved ${srcId}→${dstId}`,'wb-ok');
+  } catch(e){
+    setSyncBadge('error','WRITE ERROR');
+    wbLog('⚠ Write failed: '+e.message,'wb-err');
+  }
+}
+
+// ─── Write rate card ──────────────────────────────────────────────────
+async function saveRateCard(){
+  if(isOffline){ toast('Offline — rate card saved in memory only','#fbbf24'); return; }
+  setSyncBadge('syncing','WRITING...');
+  try {
+    const values = RATE_CARD.map((r,i)=>[
+      `TM-${String(i+1).padStart(3,'0')}`, r.cat, r.sub, r.unit, r.cplx,
+      r.aR, r.bR, (r.aR-r.bR).toFixed(2),
+      ((r.aR*0.6+r.bR*0.4)).toFixed(2),
+      '', '', '', r.rush,
+      (r.aR*(1+r.rush/100)).toFixed(2),
+      (r.bR*(1+r.rush/100)).toFixed(2), ''
+    ]);
+    await gapi.client.sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID,
+      range: `RATE_CARD!A11:P${10+values.length}`,
+      valueInputOption: 'USER_ENTERED',
+      resource: { values }
+    });
+    setSyncBadge('synced','SYNCED');
+    wbLog(`✓ Rate card saved (${values.length} rows)`,'wb-ok');
+    toast('✓ Rate card saved to Google Sheets');
+  } catch(e){
+    setSyncBadge('error','WRITE ERROR');
+    wbLog('⚠ Rate card write failed: '+e.message,'wb-err');
+  }
+}
+
+// ─── Write cost config ────────────────────────────────────────────────
+async function saveCostConfig(agency){
+  const model = agentModels[agency];
+  if(isOffline){ toast(`${agency} config saved in memory only`,'#fbbf24'); return; }
+  setSyncBadge('syncing','WRITING...');
+  try {
+    const row = agency==='alpha' ? 6 : 7;
+    const hcRate = parseFloat(document.getElementById(`${agency}-hc-rate`)?.value||document.getElementById(`${agency}-hyb-rate`)?.value||0);
+    const hybPct = parseFloat(document.getElementById(`${agency}-hyb-pct`)?.value||0);
+    await gapi.client.sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID,
+      range: `RATE_CARD!B${row}:G${row}`,
+      valueInputOption: 'USER_ENTERED',
+      resource: { values: [[
+        model, hcRate,
+        agency==='alpha'?46:28,
+        hybPct, '', ''
+      ]] }
+    });
+    setSyncBadge('synced','SYNCED');
+    document.getElementById(`${agency}-saved`).textContent = '✓ Saved '+new Date().toLocaleTimeString('en-IN');
+    wbLog(`✓ ${agency} billing config saved: ${model}`,'wb-ok');
+    toast(`✓ ${agency} config saved to Sheets`);
+  } catch(e){
+    setSyncBadge('error','WRITE ERROR');
+    wbLog('⚠ Config write failed: '+e.message,'wb-err');
+  }
+}
+
+// ═══════════════ HELPERS ════════════════════════════════════════════════
+const dtc = p=>{ const r=p.total-p.done,u=p.agents*(NET/p.apt); return u>0?Math.ceil(r/u):999; };
+const tpd = p=>Math.round(p.agents*(NET/p.apt));
+const pct = p=>Math.round(p.done/p.total*100);
+const reqId = pid=>{ const m=MAPPING.find(x=>x.prj===pid); return m?m.req:'—'; };
+const teamOf= pid=>{ const m=MAPPING.find(x=>x.prj===pid); return m?m.team:'—'; };
+const riskOf= (d,s)=>{
+  if(s==='On-Hold')  return {l:'ON-HOLD',  c:'#64748b'};
+  if(s==='Backlog')  return {l:'BACKLOG',   c:'#64748b'};
+  if(s==='Planning') return {l:'PLANNING',  c:'#00e5ff'};
+  if(d<=3)  return {l:'🔴 CRITICAL',c:'#ef4444'};
+  if(d<=7)  return {l:'🟠 HIGH',    c:'#f97316'};
+  if(d<=14) return {l:'🟡 WATCH',   c:'#fbbf24'};
+  return {l:'🟢 OK',c:'#10b981'};
+};
+const BC = {0:'bp0',1:'bp1',2:'bp2',3:'bp3'};
+const SC = {Active:'ba','On-Hold':'bh',Planning:'bp',Backlog:'bk'};
+
+function setSyncBadge(type,text){
+  const b=document.getElementById('sync-badge');
+  b.className='sync-badge '+type;
+  b.textContent=(type==='synced'?'● ':type==='syncing'?'◌ ':type==='error'?'✕ ':'○ ')+text;
+}
+
+function wbLog(msg,cls=''){
+  const el=document.getElementById('wb-log');
+  const line=document.createElement('div');
+  line.className=cls;
+  line.textContent=new Date().toLocaleTimeString('en-IN')+' · '+msg;
+  el.appendChild(line);
+  el.scrollTop=el.scrollHeight;
+}
+
+function toast(msg,col='#00e5ff'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.borderColor=col;t.style.display='block';
+  setTimeout(()=>t.style.display='none',3000);
+}
+
+function T(name,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  el.classList.add('active');
+}
+
+// ═══════════════ RENDER ══════════════════════════════════════════════════
+function renderAll(){
+  renderOverview();
+  renderProjects();
+  renderReallocTable();
+  renderRateCard();
+  recalcCost();
+  renderAgency();
+  renderIdle();
+  renderQA();
+}
+
+function renderOverview(){
+  const idle=PROJECTS.filter(p=>{const d=dtc(p);return p.status==='Active'&&d<=7;}).length;
+  document.getElementById('k-idle').textContent=idle;
+  const tot=PROJECTS.reduce((s,p)=>s+p.total,0);
+  const don=PROJECTS.reduce((s,p)=>s+p.done,0);
+  document.getElementById('k-prog').textContent=Math.round(don/tot*100)+'%';
+  const cards=document.getElementById('proj-cards');
+  cards.innerHTML='';
+  PROJECTS.slice(0,8).forEach(p=>{
+    const d=dtc(p),pc=pct(p);
+    const {l,c}=riskOf(d,p.status);
+    const alert=p.status==='Active'&&d<=7?`<div style="margin-top:5px;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.2)">⚠ IDLE IN ${d}d</div>`:'';
+    cards.innerHTML+=`<div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${c};border-radius:7px;padding:11px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+        <div style="font-size:11px;font-weight:600;line-height:1.2">${p.name}</div>
+        <span class="badge ${BC[p.prio]}">P${p.prio}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:3px;">
+        <span>${p.done.toLocaleString()} / ${p.total.toLocaleString()}</span>
+        <span style="color:${c};font-family:var(--mono);font-weight:700">${pc}%</span>
+      </div>
+      <div class="pbar"><div class="pfill" style="width:${pc}%;background:${c}"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:4px;">
+        <span>👥${p.agents} · ⚡${tpd(p).toLocaleString()}/d</span>
+        <span style="color:${c}">${l}</span>
+      </div>${alert}
+    </div>`;
+  });
+}
+
+function renderProjects(){
+  const tb=document.getElementById('proj-tbody');
+  tb.innerHTML='';
+  PROJECTS.forEach(p=>{
+    const d=dtc(p),pc=pct(p),rem=p.total-p.done;
+    const {l,c}=riskOf(d,p.status);
+    tb.innerHTML+=`<tr>
+      <td style="font-family:var(--mono);font-size:9px;color:var(--muted)">${reqId(p.id)}</td>
+      <td style="font-family:var(--mono);font-size:9px;color:var(--accent)">${p.id}</td>
+      <td style="font-weight:500">${p.name}</td>
+      <td style="font-size:9px;color:var(--muted)">${teamOf(p.id)}</td>
+      <td><span class="badge ${BC[p.prio]}">P${p.prio}</span></td>
+      <td><span class="badge ${SC[p.status]||'bk'}">${p.status}</span></td>
+      <td style="text-align:right">${p.total.toLocaleString()}</td>
+      <td style="text-align:right;color:#10b981">${p.done.toLocaleString()}</td>
+      <td style="text-align:right;color:#f97316">${rem.toLocaleString()}</td>
+      <td style="text-align:center">
+        <div style="display:flex;align-items:center;gap:4px;">
+          <div class="pbar" style="flex:1;height:3px"><div class="pfill" style="width:${pc}%;background:${c}"></div></div>
+          <span style="font-size:9px;color:${c};font-family:var(--mono)">${pc}%</span>
+        </div>
+      </td>
+      <td style="text-align:center">${p.agents}</td>
+      <td style="text-align:right;font-family:var(--mono)">${tpd(p)>0?tpd(p).toLocaleString():'—'}</td>
+      <td style="text-align:center;font-family:var(--mono);color:${c}">${d<999?d+'d':'∞'}</td>
+      <td style="font-size:9px">${p.sla}</td>
+      <td style="color:${c};font-weight:700;font-size:9px">${l}</td>
+    </tr>`;
+  });
+}
+
+// ── Reallocation ──────────────────────────────────────────────────────
+function populateRealloc(){
+  ['src-proj','dst-proj'].forEach(id=>{
+    const sel=document.getElementById(id);
+    sel.innerHTML='<option value="">— Select project —</option>';
+    PROJECTS.forEach(p=>{
+      const o=document.createElement('option');
+      o.value=p.id;
+      o.textContent=`${p.id} — ${p.name} (P${p.prio} · ${p.agents} agents)`;
+      sel.appendChild(o);
+    });
+  });
+}
+
+function updateRealloc(){
+  const srcId=document.getElementById('src-proj').value;
+  const dstId=document.getElementById('dst-proj').value;
+  const xpct=parseInt(document.getElementById('xpct').value);
+  const ramp=parseInt(document.getElementById('ramp').value);
+  document.getElementById('xpct-val').textContent=xpct+'%';
+  document.getElementById('ramp-val').textContent=ramp+(ramp===1?' day':' days');
+  if(!srcId) return;
+  const src=PROJECTS.find(p=>p.id===srcId);
+  const dst=dstId?PROJECTS.find(p=>p.id===dstId):null;
+  document.getElementById('src-meta').textContent=
+    `${src.agents} agents · ${tpd(src).toLocaleString()} tpd · ${dtc(src)}d left · ${src.status}`;
+  document.getElementById('dst-meta').textContent=dst?
+    `${dst.agents} agents · ${tpd(dst).toLocaleString()} tpd · ${dtc(dst)}d left · ${dst.status}`:'—';
+  const moved=Math.max(1,Math.floor(src.agents*xpct/100));
+  const rampEff=ramp>0?0.40:0.85;
+  const srcA=src.agents-moved;
+  const srcTpdA=Math.round(srcA*(NET/src.apt));
+  const srcDaysA=srcA>0?Math.ceil((src.total-src.done)/srcTpdA):999;
+  const dstTpdA=dst?Math.round((dst.agents*0.85+moved*rampEff)*(NET/dst.apt)):0;
+  document.getElementById('imp-moved').textContent=moved;
+  document.getElementById('imp-stpd').textContent=srcTpdA.toLocaleString();
+  document.getElementById('imp-stpd-d').innerHTML=`<span style="color:${srcTpdA<tpd(src)?'#ef4444':'#10b981'}">Δ ${srcTpdA-tpd(src)}</span>`;
+  document.getElementById('imp-sdays').textContent=srcDaysA<999?srcDaysA+'d':'∞';
+  document.getElementById('imp-sdays-d').innerHTML=`<span style="color:#ef4444">Δ +${srcDaysA-dtc(src)}d</span>`;
+  document.getElementById('imp-dtpd').textContent=dstTpdA>0?dstTpdA.toLocaleString():'—';
+  if(dst) document.getElementById('imp-dtpd-d').innerHTML=`<span style="color:#10b981">Δ +${dstTpdA-tpd(dst)}</span>`;
+  document.getElementById('xpreview').textContent=
+    `Strategy: ${document.getElementById('strategy').value} · Moving ${moved} agent(s) · Ramp: ${ramp}d at ${Math.round(rampEff*100)}% efficiency`;
+  const warn=document.getElementById('realloc-warn');
+  if(src.prio===0&&xpct>40) warn.textContent='⚠ Reducing a P0 project by >40% — confirm with stakeholder';
+  else if(srcDaysA>30) warn.textContent=`⚠ Source SLA may slip — ${srcDaysA}d to complete`;
+  else warn.textContent='';
+}
+
+async function confirmRealloc(){
+  const srcId=document.getElementById('src-proj').value;
+  const dstId=document.getElementById('dst-proj').value;
+  const xpct=parseInt(document.getElementById('xpct').value);
+  const ramp=parseInt(document.getElementById('ramp').value);
+  if(!srcId||!dstId){toast('Select both source and destination','#ef4444');return;}
+  if(srcId===dstId){toast('Source and destination must differ','#ef4444');return;}
+  const src=PROJECTS.find(p=>p.id===srcId);
+  const dst=PROJECTS.find(p=>p.id===dstId);
+  const moved=Math.max(1,Math.floor(src.agents*xpct/100));
+  if(moved>=src.agents){toast('Cannot remove all agents','#ef4444');return;}
+  // Apply locally
+  src.agents-=moved; src.aA=Math.round(src.agents*0.6); src.aB=src.agents-src.aA;
+  dst.agents+=moved; dst.aA=Math.round(dst.agents*0.6); dst.aB=dst.agents-dst.aA;
+  // Write to Sheets
+  await writeAllocation(srcId,dstId,moved,xpct,ramp);
+  // Re-render
+  renderAll(); populateRealloc();
+  toast(`✓ Moved ${moved} agents: ${src.name} → ${dst.name}`);
+  resetRealloc();
+}
+
+function resetRealloc(){
+  document.getElementById('src-proj').value='';
+  document.getElementById('dst-proj').value='';
+  document.getElementById('xpct').value=30;
+  document.getElementById('ramp').value=3;
+  updateRealloc();
+}
+
+function renderReallocTable(){
+  const tb=document.getElementById('ra-tbody');
+  tb.innerHTML='';
+  PROJECTS.forEach(p=>{
+    const typeC='#10b981';
+    for(let i=0;i<Math.min(p.agents,3);i++){
+      const aNum=i+1+(PROJECTS.indexOf(p)*5);
+      const ag=aNum%2===0?'Agency Alpha':'Agency Beta';
+      tb.innerHTML+=`<tr>
+        <td style="font-family:var(--mono);font-size:9px">AG-${String(aNum%80+1).padStart(3,'0')}</td>
+        <td style="font-size:9px;color:${ag.includes('Alpha')?'#00e5ff':'#f59e0b'}">${ag}</td>
+        <td style="font-size:9px">Labeler</td>
+        <td style="font-size:10px">${p.name}</td>
+        <td><span class="badge ${BC[p.prio]}">P${p.prio}</span></td>
+        <td style="text-align:center;font-family:var(--mono);color:${typeC}">100%</td>
+        <td style="font-size:9px;color:${typeC}">Primary</td>
+        <td style="text-align:right;font-family:var(--mono);font-size:9px">${Math.round(NET/p.apt)}</td>
+        <td style="font-size:9px;color:#10b981">Full Speed</td>
+      </tr>`;
+    }
+  });
+}
+
+// ── Cost Config ───────────────────────────────────────────────────────
+function setModel(agency,model){
+  agentModels[agency]=model;
+  const tgl=document.getElementById(`tgl-${agency}`);
+  tgl.querySelectorAll('.ctb').forEach(b=>b.classList.toggle('active',b.textContent===model));
+  document.getElementById(`${agency}-hc`).style.display=model==='HC'?'block':'none';
+  document.getElementById(`${agency}-hyb`).style.display=model==='Hybrid'?'block':'none';
+  recalcCost();
+}
+
+function recalcCost(){
+  const agents={alpha:46,beta:28};
+  let alphaCost=0,betaCost=0,transAlpha=0,transBeta=0;
+  ['alpha','beta'].forEach(ag=>{
+    const model=agentModels[ag];
+    const n=agents[ag];
+    const hcR=parseFloat(document.getElementById(`${ag}-hc-rate`)?.value||document.getElementById(`${ag}-hyb-rate`)?.value||0);
+    const hybPct=parseFloat(document.getElementById(`${ag}-hyb-pct`)?.value||0)/100;
+    let fixed=0,trans=0;
+    if(model==='HC') fixed=hcR*n;
+    else if(model==='Hybrid'){ fixed=hcR*n*hybPct; trans=estTrans(ag)*(1-hybPct); }
+    else trans=estTrans(ag);
+    const total=fixed+trans;
+    if(ag==='alpha'){alphaCost=total;transAlpha=trans;}
+    else{betaCost=total;transBeta=trans;}
+    document.getElementById(`${ag}-smry`).innerHTML=
+      `<div style="background:var(--surface);border-radius:6px;padding:8px;font-size:10px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="color:var(--muted)">Model</span><strong style="color:var(--accent)">${model}</strong></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="color:var(--muted)">Fixed</span><strong>₹${Math.round(fixed).toLocaleString()}</strong></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--muted)">Transaction Est.</span><strong>₹${Math.round(trans).toLocaleString()}</strong></div>
+      </div>`;
+  });
+  document.getElementById('cost-smry').innerHTML=`
+    <div class="kpi" style="--kpi-c:#00e5ff"><div class="kpi-label">Alpha Fixed</div><div class="kpi-val" style="font-size:16px">₹${Math.round((alphaCost-transAlpha)/1000)}k</div></div>
+    <div class="kpi" style="--kpi-c:#f59e0b"><div class="kpi-label">Beta Fixed</div><div class="kpi-val" style="font-size:16px">₹${Math.round((betaCost-transBeta)/1000)}k</div></div>
+    <div class="kpi" style="--kpi-c:#10b981"><div class="kpi-label">Transaction Est.</div><div class="kpi-val" style="font-size:16px">₹${Math.round((transAlpha+transBeta)/1000)}k</div></div>
+    <div class="kpi" style="--kpi-c:#7c3aed"><div class="kpi-label">Total/Month</div><div class="kpi-val" style="font-size:16px">₹${Math.round((alphaCost+betaCost)/1000)}k</div></div>
+  `;
+}
+
+function estTrans(ag){
+  const rateMap={'PRJ-001':22,'PRJ-002':0.8,'PRJ-003':8.5,'PRJ-004':1.8,
+    'PRJ-005':1.8,'PRJ-011':1.2,'PRJ-012':0.8,'PRJ-013':3.5,'PRJ-015':12};
+  return PROJECTS.reduce((sum,p)=>{
+    const rate=rateMap[p.id]||2;
+    const ac=ag==='alpha'?p.aA:p.aB;
+    return sum+ac*(NET/p.apt)*22*rate;
+  },0);
+}
+
+function renderRateCard(){
+  const tb=document.getElementById('rate-tbody');
+  tb.innerHTML='';
+  const cC={'Low':'#10b981','Medium':'#fbbf24','High':'#f97316','Very High':'#ef4444'};
+  RATE_CARD.forEach((r,i)=>{
+    tb.innerHTML+=`<tr style="background:${i%2===0?'var(--surface)':'var(--bg)'}">
+      <td>${r.cat}</td><td style="font-weight:500">${r.sub}</td>
+      <td style="font-size:9px;color:var(--muted)">${r.unit}</td>
+      <td style="color:${cC[r.cplx]||'#64748b'};font-weight:600;font-size:10px">${r.cplx}</td>
+      <td class="editable-cell"><input value="${r.aR}" oninput="RATE_CARD[${i}].aR=parseFloat(this.value)||0;recalcCost()">₹</td>
+      <td class="editable-cell"><input value="${r.bR}" oninput="RATE_CARD[${i}].bR=parseFloat(this.value)||0;recalcCost()">₹</td>
+      <td class="editable-cell"><input value="${r.rush}" oninput="RATE_CARD[${i}].rush=parseFloat(this.value)||0" style="width:40px">%</td>
+      <td style="font-family:var(--mono);font-size:10px;color:#10b981">₹${(r.aR*(1+r.rush/100)).toFixed(2)}</td>
+      <td style="font-family:var(--mono);font-size:10px;color:#10b981">₹${(r.bR*(1+r.rush/100)).toFixed(2)}</td>
+    </tr>`;
+  });
+}
+
+// ── Agency ────────────────────────────────────────────────────────────
+function renderAgency(){
+  const ags=[
+    {name:'Agency Alpha',hc:50,lb:46,qc:4,util:92,upd:20100,qap:93.5,sla:88,vhs:8.4,tier:'Tier 1',col:'#00e5ff'},
+    {name:'Agency Beta', hc:30,lb:28,qc:2,util:93,upd:12040,qap:91.8,sla:82,vhs:7.9,tier:'Tier 2',col:'#f59e0b'},
+  ];
+  document.getElementById('agency-cards').innerHTML=ags.map(a=>`
+    <div class="panel">
+      <div class="sec" style="color:${a.col}">${a.name} · ${a.tier}</div>
+      ${[['HC',a.hc],['Labelers',a.lb],['QC',a.qc],['Utilisation',a.util+'%'],
+         ['Units/Day',a.upd.toLocaleString()],['QA Pass',a.qap+'%'],
+         ['SLA Adherence',a.sla+'%'],['Health Score',a.vhs+'/10']
+        ].map(([k,v])=>
+        `<div style="display:flex;justify-content:space-between;padding:4px 0;
+          border-bottom:1px solid rgba(30,45,69,.4);font-size:11px;">
+          <span style="color:var(--muted)">${k}</span>
+          <strong style="color:${a.col}">${v}</strong>
+        </div>`).join('')}
+    </div>`).join('');
+
+  const tb=document.getElementById('agency-tbody');
+  tb.innerHTML='';
+  const qaA=[.95,.92,.91,.96,.89,0,0,0,.93,0,.94,.93,.95,0,.90];
+  const qaB=[.90,.88,.89,.91,.85,0,0,0,.88,0,.91,.88,.90,0,.85];
+  PROJECTS.forEach((p,i)=>{
+    const tc=p.aA+p.aB,ap=tc?Math.round(p.aA/tc*100):0;
+    const upd=NET/p.apt,atpd=Math.round(p.aA*upd),btpd=Math.round(p.aB*upd);
+    const cost=Math.round(p.aA*8*12.5+p.aB*8*10.8);
+    const ra=p.aA/Math.max(tc,1)>.7?'🔴':'🟡';
+    tb.innerHTML+=`<tr>
+      <td style="font-family:var(--mono);font-size:9px;color:var(--muted)">${reqId(p.id)}</td>
+      <td style="font-family:var(--mono);font-size:9px;color:var(--accent)">${p.id}</td>
+      <td style="font-size:10px;font-weight:500">${p.name}</td>
+      <td><span class="badge ${BC[p.prio]}">P${p.prio}</span></td>
+      <td><span class="badge ${SC[p.status]||'bk'}">${p.status}</span></td>
+      <td style="text-align:center;color:#00e5ff;font-weight:600">${p.aA}</td>
+      <td style="text-align:center;color:#f59e0b;font-weight:600">${p.aB}</td>
+      <td style="text-align:center;color:#00e5ff">${ap}%</td>
+      <td style="text-align:center;color:#f59e0b">${100-ap}%</td>
+      <td style="font-family:var(--mono);text-align:right">${atpd>0?atpd:'—'}</td>
+      <td style="font-family:var(--mono);text-align:right">${btpd>0?btpd:'—'}</td>
+      <td style="text-align:center;color:${qaA[i]>=.92?'#10b981':'#fbbf24'}">${tc>0?(qaA[i]*100).toFixed(0)+'%':'—'}</td>
+      <td style="text-align:center;color:${qaB[i]>=.90?'#10b981':'#fbbf24'}">${p.aB>0?(qaB[i]*100).toFixed(0)+'%':'—'}</td>
+      <td style="font-family:var(--mono);text-align:right">₹${cost>0?cost.toLocaleString():'—'}</td>
+      <td style="text-align:center;font-size:14px">${ra}</td>
+    </tr>`;
+  });
+}
+
+// ── Idle ──────────────────────────────────────────────────────────────
+function renderIdle(){
+  const hm=document.getElementById('heatmap');
+  hm.style.gridTemplateColumns='180px repeat(7,1fr)';
+  hm.innerHTML=`<div style="font-family:var(--mono);font-size:9px;color:var(--muted);padding:5px">PROJECT</div>`;
+  for(let d=1;d<=7;d++) hm.innerHTML+=`<div style="text-align:center;padding:5px;font-family:var(--mono);font-size:9px;color:var(--muted)">Day ${d}</div>`;
+  PROJECTS.filter(p=>p.status!=='Backlog').forEach(p=>{
+    const d=dtc(p);
+    hm.innerHTML+=`<div style="font-size:10px;font-weight:500;padding:4px 6px;display:flex;align-items:center;">${p.name.slice(0,22)}</div>`;
+    for(let i=1;i<=7;i++){
+      let bg,txt;
+      if(p.status==='On-Hold'){bg='rgba(100,116,139,.1)';txt='—';}
+      else if(p.status==='Planning'){bg='rgba(0,229,255,.07)';txt='P';}
+      else if(i>d){bg='rgba(239,68,68,.09)';txt='IDLE';}
+      else if(i===d){bg='rgba(251,191,36,.22)';txt='⚠';}
+      else if(d-i<=2){bg='rgba(249,115,22,.16)';txt='→';}
+      else{bg='rgba(16,185,129,.1)';txt='✓';}
+      hm.innerHTML+=`<div style="padding:4px;text-align:center;border-radius:3px;background:${bg};font-family:var(--mono);font-size:9px;">${txt}</div>`;
+    }
+  });
+  const tb=document.getElementById('idle-tbody');
+  tb.innerHTML='';
+  PROJECTS.forEach(p=>{
+    const d=dtc(p),rem=p.total-p.done;
+    const {l,c}=riskOf(d,p.status);
+    let alert='—',ac='#64748b';
+    if((p.status==='Active'||p.status==='Planning')&&d<999){
+      if(d<=3){alert=`⚠ ${d}d`;ac='#ef4444';}
+      else if(d<=7){alert=`⚠ ${d}d`;ac='#fbbf24';}
+      else{alert='OK';ac='#10b981';}
+    }
+    tb.innerHTML+=`<tr>
+      <td style="font-family:var(--mono);font-size:9px;color:var(--muted)">${reqId(p.id)}</td>
+      <td style="font-family:var(--mono);font-size:9px;color:var(--accent)">${p.id}</td>
+      <td style="font-size:10px;font-weight:500">${p.name}</td>
+      <td><span class="badge ${BC[p.prio]}">P${p.prio}</span></td>
+      <td><span class="badge ${SC[p.status]||'bk'}">${p.status}</span></td>
+      <td style="text-align:right">${rem.toLocaleString()}</td>
+      <td style="text-align:right;font-family:var(--mono)">${tpd(p)>0?tpd(p).toLocaleString():'—'}</td>
+      <td style="text-align:center;font-family:var(--mono);color:${c}">${d<999?d+'d':'∞'}</td>
+      <td style="color:${c};font-weight:700;font-size:9px">${l}</td>
+      <td style="text-align:center;color:${ac};font-weight:700;font-size:9px">${alert}</td>
+      <td style="font-size:9px;color:var(--muted)">${ACTIONS[p.id]||'—'}</td>
+    </tr>`;
+  });
+}
+
+// ── QA ────────────────────────────────────────────────────────────────
+function renderQA(){
+  const tb=document.getElementById('qa-tbody');
+  tb.innerHTML='';
+  QA_LOG.forEach(q=>{
+    const s=Math.round(q.done*.05),rate=q.err/s,pass=rate<=.10;
+    tb.innerHTML+=`<tr>
+      <td style="font-family:var(--mono);font-size:9px">${q.id}</td>
+      <td style="font-size:9px">${q.date}</td>
+      <td style="font-size:10px">${q.proj}</td>
+      <td style="font-family:var(--mono);font-size:9px">${q.agent}</td>
+      <td style="font-family:var(--mono);font-size:9px;color:#7c3aed">${q.qc}</td>
+      <td style="text-align:right">${q.done.toLocaleString()}</td>
+      <td style="text-align:right">${s}</td>
+      <td style="text-align:right;color:${q.err>s*.1?'#ef4444':'#10b981'}">${q.err}</td>
+      <td style="text-align:center;font-family:var(--mono);color:${pass?'#10b981':'#ef4444'}">${(rate*100).toFixed(1)}%</td>
+      <td style="text-align:center"><span style="padding:2px 6px;border-radius:20px;font-size:9px;font-weight:700;
+        background:${pass?'rgba(16,185,129,.12)':'rgba(239,68,68,.12)'};
+        color:${pass?'#10b981':'#ef4444'}">${pass?'✅':'❌'}</span></td>
+      <td style="text-align:center;color:${!pass?'#ef4444':'#64748b'};font-size:9px;font-weight:700">${!pass?'Yes':'No'}</td>
+      <td style="font-size:9px;color:var(--muted)">${q.cause||'—'}</td>
+    </tr>`;
+  });
+}
+
+// ── Reports ───────────────────────────────────────────────────────────
+const RPT_FIELDS=[
+  {k:'reqId',l:'REQ ID',d:true},{k:'id',l:'PRJ ID',d:true},
+  {k:'name',l:'Project',d:true},{k:'team',l:'Team',d:true},
+  {k:'prio',l:'Priority',d:true},{k:'status',l:'Status',d:true},
+  {k:'total',l:'Total Units'},{k:'done',l:'Units Done'},
+  {k:'rem',l:'Remaining'},{k:'pct',l:'% Complete',d:true},
+  {k:'agents',l:'Agents',d:true},{k:'tpd',l:'TPD'},
+  {k:'dtc',l:'Days Left',d:true},{k:'sla',l:'SLA Date',d:true},
+  {k:'risk',l:'Risk',d:true},{k:'alert',l:'Idle Alert',d:true},
+  {k:'aA',l:'Alpha Agents'},{k:'aB',l:'Beta Agents'},
+  {k:'apt',l:'APT (mins)'},{k:'qaErr',l:'QA Error %'},
+];
+
+function renderReportFields(){
+  document.getElementById('field-grid').innerHTML=RPT_FIELDS.map((f,i)=>
+    `<label class="field-item ${f.d?'checked':''}" id="fi-${i}" onclick="tF(${i},this)">
+      <input type="checkbox" id="fc-${i}" ${f.d?'checked':''} onclick="event.stopPropagation();tF(${i},this.closest('.field-item'))">
+      ${f.l}</label>`).join('');
+}
+function tF(i,el){ const cb=document.getElementById(`fc-${i}`); cb.checked=!cb.checked; el.classList.toggle('checked',cb.checked); }
+function selAll(){ RPT_FIELDS.forEach((_,i)=>{ document.getElementById(`fc-${i}`).checked=true; document.getElementById(`fi-${i}`).classList.add('checked'); }); }
+function clrAll(){ RPT_FIELDS.forEach((_,i)=>{ document.getElementById(`fc-${i}`).checked=false; document.getElementById(`fi-${i}`).classList.remove('checked'); }); }
+
+function getRptData(){
+  const sf=RPT_FIELDS.filter((_,i)=>document.getElementById(`fc-${i}`).checked);
+  const sf_s=document.getElementById('rpt-status').value;
+  const pf=document.getElementById('rpt-prio').value;
+  const rf=document.getElementById('rpt-risk').value;
+  let data=PROJECTS.filter(p=>{
+    if(sf_s&&p.status!==sf_s) return false;
+    if(pf!==''&&p.prio!==parseInt(pf)) return false;
+    return true;
+  }).map(p=>{
+    const d=dtc(p),{l}=riskOf(d,p.status);
+    const alert=p.status==='Active'&&d<=7?`IDLE IN ${d}d`:'OK';
+    const row={reqId:reqId(p.id),id:p.id,name:p.name,team:teamOf(p.id),
+      prio:`P${p.prio}`,status:p.status,total:p.total,done:p.done,
+      rem:p.total-p.done,pct:pct(p)+'%',agents:p.agents,tpd:tpd(p),
+      dtc:d<999?d+'d':'∞',sla:p.sla,risk:l,alert,
+      aA:p.aA,aB:p.aB,apt:p.apt,qaErr:(p.qaErr*100).toFixed(1)+'%'};
+    return {fields:sf.map(f=>row[f.k]??''),riskKey:l};
+  });
+  if(rf) data=data.filter(r=>r.riskKey===rf);
+  return {headers:sf.map(f=>f.l),rows:data.map(r=>r.fields)};
+}
+
+function genReport(){
+  const {headers,rows}=getRptData();
+  if(!headers.length){toast('Select at least one field','#ef4444');return;}
+  document.getElementById('rpt-panel').style.display='block';
+  document.getElementById('rpt-thead').innerHTML=`<tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr>`;
+  document.getElementById('rpt-tbody').innerHTML=rows.map(r=>
+    `<tr>${r.map(v=>`<td style="font-size:10px">${v}</td>`).join('')}</tr>`).join('');
+  document.getElementById('rpt-meta').textContent=
+    `${rows.length} rows · ${headers.length} cols · ${new Date().toLocaleString('en-IN')}`;
+}
+
+function dlCSV(){
+  const {headers,rows}=getRptData();
+  if(!rows.length){toast('No data','#ef4444');return;}
+  const esc=v=>`"${String(v).replace(/"/g,'""')}"`;
+  const csv=[headers.map(esc).join(','),...rows.map(r=>r.map(esc).join(','))].join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=`HiTL_Report_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  toast(`✓ Downloaded ${rows.length} rows`);
+}
+
+// ── Chart ─────────────────────────────────────────────────────────────
+function initChart(){
+  new Chart(document.getElementById('utilChart'),{
+    type:'doughnut',
+    data:{labels:['Active Labelers','QC Agents','On Leave','Training'],
+      datasets:[{data:[68,4,5,3],
+        backgroundColor:['#00e5ff','#7c3aed','#f97316','#fbbf24'],
+        borderColor:'var(--card)',borderWidth:3}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{color:'#64748b',font:{size:10},padding:8}}}}
+  });
+}
+
+// ── Clock ─────────────────────────────────────────────────────────────
+setInterval(()=>{
+  document.getElementById('clock').textContent=
+    new Date().toLocaleTimeString('en-IN',{hour12:false,timeZone:'Asia/Kolkata'})+' IST';
+},1000);
+
+// ── INIT ──────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  populateRealloc();
+  renderReportFields();
+  initChart();
+  renderAll();
+});
+</script>
+
+<script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+</body>
+</html>
