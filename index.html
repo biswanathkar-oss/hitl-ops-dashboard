@@ -18,8 +18,8 @@
 body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden;}
 
 /* ── Scroll blank fix: promote layers ── */
-.panel,.tbl-wrap,.proj-card{transform:translateZ(0);}
-.tbl-wrap{-webkit-overflow-scrolling:touch;}
+.panel,.tbl-wrap,.proj-card{}
+.tbl-wrap{}
 
 header{
   display:flex;align-items:center;justify-content:space-between;
@@ -79,7 +79,7 @@ header{
 .tab:hover:not(.active){color:var(--text);}
 
 /* Pages */
-.page{display:none;padding:20px 24px;}
+.page{display:none;padding:20px 24px;contain:layout style;}
 .page.active{display:block;}
 
 /* KPI */
@@ -106,13 +106,11 @@ header{
 .g6{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;}
 
 /* Table */
-.tbl-wrap{overflow-y:auto;max-height:380px;}
+.tbl-wrap{overflow-y:auto;max-height:380px;position:relative;}
 .tbl-wrap::-webkit-scrollbar{width:4px;}
 .tbl-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 table{width:100%;border-collapse:collapse;font-size:11px;}
-thead{display:table;width:100%;table-layout:fixed;}
-tbody{display:block;overflow-y:auto;}
-tbody tr{display:table;width:100%;table-layout:fixed;}
+thead{} tbody{} tbody tr{}
 th{text-align:left;padding:7px 9px;font-family:var(--mono);font-size:9px;
   letter-spacing:1px;text-transform:uppercase;color:var(--muted);
   border-bottom:1px solid var(--border);background:var(--card);}
@@ -203,6 +201,23 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
   border:1px solid var(--accent);border-radius:8px;padding:11px 16px;
   font-size:12px;z-index:9999;display:none;}
 </style>
+<meta name="theme-color" content="#0b0f1a">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<style>
+  /* Chrome GPU rendering fix */
+  * { -webkit-font-smoothing: antialiased; }
+  html { scroll-behavior: auto; }
+  .tbl-wrap table { will-change: auto; }
+</style>
+<meta name="theme-color" content="#0b0f1a">
+<style>
+* { -webkit-font-smoothing:antialiased; box-sizing:border-box; }
+html { scroll-behavior:auto; overflow-y:scroll; }
+.tbl-wrap { overflow-y:auto; position:relative; }
+.panel { contain:layout style; }
+.page { contain:layout style; }
+canvas { display:block; }
+</style>
 </head>
 <body>
 
@@ -290,7 +305,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
         <th style="width:55px">Agents</th><th style="width:55px">TPD</th>
         <th style="width:55px">Days</th><th style="width:80px">SLA</th>
         <th style="width:90px">Risk</th>
-      </tr></thead><tbody id="proj-tbody" style="max-height:440px;"></tbody></table>
+      </tr></thead><tbody id="proj-tbody" ></tbody></table>
     </div>
   </div>
 </div>
@@ -362,7 +377,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
         <th style="width:50px">P</th><th style="width:60px">Alloc%</th>
         <th style="width:120px">Type</th><th style="width:70px">TPD</th>
         <th style="width:80px">Ramp</th>
-      </tr></thead><tbody id="ra-tbody" style="max-height:300px;"></tbody></table>
+      </tr></thead><tbody id="ra-tbody" ></tbody></table>
     </div>
   </div>
 </div>
@@ -424,7 +439,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
       <button class="btn btn-y" style="padding:4px 10px;font-size:10px" onclick="saveRateCard()">💾 Save Rate Card</button>
     </div>
     <div style="font-size:10px;color:var(--amber);margin-bottom:8px;">Yellow cells are editable. Click Save Rate Card to persist to Google Sheets.</div>
-    <div class="tbl-wrap" style="max-height:300px;">
+    <div class="tbl-wrap" >
       <table class="rate-table"><thead><tr>
         <th>Category</th><th>Sub-Type</th><th>Unit</th><th>Complexity</th>
         <th style="color:#00e5ff">α Rate (₹)</th>
@@ -432,7 +447,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
         <th>Rush +%</th>
         <th style="color:#10b981">α Rush</th>
         <th style="color:#10b981">β Rush</th>
-      </tr></thead><tbody id="rate-tbody" style="max-height:240px;"></tbody></table>
+      </tr></thead><tbody id="rate-tbody" ></tbody></table>
     </div>
   </div>
   <div class="panel">
@@ -453,7 +468,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
         <th>α Agents</th><th>β Agents</th><th>α%</th><th>β%</th>
         <th>α TPD</th><th>β TPD</th><th>α QA%</th><th>β QA%</th>
         <th>Cost/Day</th><th>α Risk</th>
-      </tr></thead><tbody id="agency-tbody" style="max-height:340px;"></tbody></table>
+      </tr></thead><tbody id="agency-tbody" ></tbody></table>
     </div>
   </div>
 </div>
@@ -472,7 +487,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
         <th style="width:160px">Project</th><th>P</th><th>Status</th>
         <th>Remaining</th><th>TPD</th><th>Days</th>
         <th>Risk</th><th>Alert</th><th>Action</th>
-      </tr></thead><tbody id="idle-tbody" style="max-height:340px;"></tbody></table>
+      </tr></thead><tbody id="idle-tbody" ></tbody></table>
     </div>
   </div>
 </div>
@@ -491,7 +506,7 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
         <th>QA ID</th><th>Date</th><th>Project</th><th>Agent</th><th>QC</th>
         <th>Labelled</th><th>Sample</th><th>Errors</th><th>Error%</th>
         <th>Outcome</th><th>Rework?</th><th>Root Cause</th>
-      </tr></thead><tbody id="qa-tbody" style="max-height:380px;"></tbody></table>
+      </tr></thead><tbody id="qa-tbody" ></tbody></table>
     </div>
   </div>
 </div>
@@ -531,8 +546,8 @@ input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:po
   </div>
   <div class="panel" id="rpt-panel" style="display:none;">
     <div class="sec">REPORT PREVIEW</div>
-    <div class="tbl-wrap" style="max-height:360px;">
-      <table><thead id="rpt-thead"></thead><tbody id="rpt-tbody" style="max-height:300px;"></tbody></table>
+    <div class="tbl-wrap" >
+      <table><thead id="rpt-thead"></thead><tbody id="rpt-tbody" ></tbody></table>
     </div>
     <div style="margin-top:8px;font-size:10px;color:var(--muted);" id="rpt-meta"></div>
   </div>
